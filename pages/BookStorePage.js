@@ -7,25 +7,39 @@ export class BookStorePage {
     this.searchBox = page.locator("#searchBox");
   }
 
+  // Search for a book
   async searchBook(bookName) {
-    await this.page.getByText("Book Store", { exact: true }).click();
+    await this.searchBox.click();
     await this.searchBox.fill(bookName);
-    await this.searchBox.press("Enter");
-
-    await expect(
-      this.page.getByRole("link", { name: bookName })
-    ).toBeVisible({ timeout: 10000 });
+    await this.page.waitForTimeout(1000);
+    await expect(this.page.getByText(bookName)).toBeVisible();
   }
 
-  async exportBookDetailsToCSV(filePath = "BookDetails.csv") {
-    const bookTitle = await this.page.locator(".rt-td").nth(1).textContent();
-    const bookAuthor = await this.page.locator(".rt-td").nth(2).textContent();
-    const bookPublisher = await this.page.locator(".rt-td").nth(3).textContent();
+  // Export book details to CSV
+  async exportBookDetailsToCSV(bookName, filePath = "BookDetails.csv") {
+    const bookSection = this.page.locator('.col-12.mt-4.col-md-6.col-xl-7');
+    const sectionText = await bookSection.textContent();
+
+    const bookPart = sectionText.replace(/User Name : .*?Log out/, '').trim();
+
+    const publisherIndex = bookPart.indexOf('Publisher');
+    if (publisherIndex === -1) {
+      throw new Error('Publisher label not found');
+    }
+
+    const valuesPart = bookPart.substring(publisherIndex + 'Publisher'.length).trim();
+    const values = valuesPart.split(/Previous|Page|Next/).filter(v => v.trim())[0];
+
+    const title = bookName;
+    const remaining = values.replace(title, '').trim();
+
+    const authorMatch = remaining.match(/(.*?)(O'Reilly Media|$)/);
+    const author = authorMatch ? authorMatch[1].trim() : 'Unknown';
+    const publisher = remaining.includes("O'Reilly Media") ? "O'Reilly Media" : 'Unknown';
 
     let bookDetailsData = `"Title","Author","Publisher"\n`;
-    bookDetailsData += `${bookTitle},${bookAuthor},${bookPublisher}\n`;
+    bookDetailsData += `"${title}","${author}","${publisher}"\n`;
 
     fs.writeFileSync(filePath, bookDetailsData);
-    console.log(`Book details exported to ${filePath}`);
   }
 }

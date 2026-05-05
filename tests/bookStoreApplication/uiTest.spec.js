@@ -1,17 +1,32 @@
-import { test } from "@playwright/test";
+import 'dotenv/config';
+import { test, expect } from "@playwright/test";
 import { PageObjects } from "../../pages/pageObjects";
 
 test("UI Automation", async ({ page }) => {
-  test.setTimeout(60000);
   const pageObjects = new PageObjects(page);
 
+  const username = process.env.USER;
+  const password = process.env.PASSWORD;
+  const bookName = "Learning JavaScript Design Patterns";
+
+  // Navigate to book store
   await pageObjects.landingPage.navigateToBookStore();
 
-  await pageObjects.loginPage.login(process.env.USER, process.env.PASSWORD);
-  await pageObjects.loginPage.validateLogin(process.env.USER);
+  // Login
+  await pageObjects.loginPage.login(username, password);
+  await pageObjects.loginPage.validateLogin(username);
 
-  await pageObjects.bookStorePage.searchBook("Learning JavaScript Design Patterns");
-  await pageObjects.bookStorePage.exportBookDetailsToCSV();
+  // Go to book store
+  await page.getByRole('button', { name: 'Go To Book Store' }).click();
+  await page.waitForURL('**/books');
 
+  // Search book
+  await pageObjects.bookStorePage.searchBook(bookName);
+  await expect(page.getByText(bookName)).toBeVisible();
+
+  // Export details
+  await pageObjects.bookStorePage.exportBookDetailsToCSV(bookName);
+
+  // Logout
   await pageObjects.loginPage.logout();
 });
