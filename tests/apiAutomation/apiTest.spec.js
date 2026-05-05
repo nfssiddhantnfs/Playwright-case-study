@@ -28,7 +28,7 @@ test("API Automation", async ({ request }) => {
       "x-api-key": "reqres-free-v1",
     },
   });
-  expect([200, 404]).toContain(getRes.status());
+  expect([200]).toContain(getRes.status());
   if (getRes.status() == 200) {
     const fetchedData = await getRes.json();
     expect(fetchedData.name).toBe(userDetails.name);
